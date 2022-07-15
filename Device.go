@@ -10,6 +10,7 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/beevik/etree"
 	"github.com/use-go/onvif/device"
@@ -89,6 +90,16 @@ type DeviceParams struct {
 	HttpClient *http.Client
 }
 
+//GetXAddr returns device parameters
+func (dev *Device) GetXAddr() string {
+	return dev.params.Xaddr
+}
+
+//GetParams returns device parameters
+func (dev *Device) GetParams() DeviceParams {
+	return dev.params
+}
+
 //GetServices return available endpoints
 func (dev *Device) GetServices() map[string]string {
 	return dev.endpoints
@@ -112,7 +123,8 @@ func GetAvailableDevicesAtSpecificEthernetInterface(interfaceName string) []Devi
 	/*
 		Call an ws-discovery Probe Message to Discover NVT type Devices
 	*/
-	devices := wsdiscovery.SendProbe(interfaceName, nil, []string{"dn:" + NVT.String()}, map[string]string{"dn": "http://www.onvif.org/ver10/network/wsdl"})
+	devices := wsdiscovery.SendProbe(interfaceName, nil, []string{"dn:" + NVT.String()},
+		map[string]string{"dn": "http://www.onvif.org/ver10/network/wsdl"})
 	nvtDevices := make([]Device, 0)
 
 	for _, j := range devices {
@@ -139,7 +151,8 @@ func GetAvailableDevicesAtSpecificEthernetInterface(interfaceName string) []Devi
 				continue
 			}
 
-			dev, err := NewDevice(DeviceParams{Xaddr: strings.Split(xaddr, " ")[0]})
+			dev, err := NewDevice(DeviceParams{Xaddr: strings.Split(xaddr, " ")[0]},
+				0 /* timeout */)
 
 			if err != nil {
 				fmt.Println("Error", xaddr)
@@ -174,7 +187,7 @@ func (dev *Device) getSupportedServices(resp *http.Response) {
 }
 
 //NewDevice function construct a ONVIF Device entity
-func NewDevice(params DeviceParams) (*Device, error) {
+func NewDevice(params DeviceParams, timeout time.Duration) (*Device, error) {
 	dev := new(Device)
 	dev.params = params
 	dev.endpoints = make(map[string]string)
@@ -182,6 +195,9 @@ func NewDevice(params DeviceParams) (*Device, error) {
 
 	if dev.params.HttpClient == nil {
 		dev.params.HttpClient = new(http.Client)
+		if timeout != 0 {
+			dev.params.HttpClient.Timeout = timeout
+		}
 	}
 
 	getCapabilities := device.GetCapabilities{Category: "All"}
