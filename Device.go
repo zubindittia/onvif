@@ -212,6 +212,10 @@ func NewDevice(params DeviceParams, timeout time.Duration) (*Device, error) {
 	return dev, nil
 }
 
+func NewDeviceForXAddr(xaddr string, timeout time.Duration) (*Device, error) {
+	return NewDevice(DeviceParams{Xaddr: xaddr}, timeout)
+}
+
 func (dev *Device) addEndpoint(Key, Value string) {
 	//use lowCaseKey
 	//make key having ability to handle Mixed Case for Different vendor devcie (e.g. Events EVENTS, events)
